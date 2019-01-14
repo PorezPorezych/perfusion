@@ -5,12 +5,15 @@ using System.Reflection;
 
 namespace Perfusion
 {
+    public delegate bool TypeNotFoundHandler(Type t);
     public class Container
     {
         public const BindingFlags ALL_INSTANCE = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
         Dictionary<Type, ObjectInfo> objects = new Dictionary<Type, ObjectInfo>();
         public IReadOnlyDictionary<Type, ObjectInfo> RegisteredObjects => objects;
+
+        public TypeNotFoundHandler OnTypeNotFound { get; set; }
 
         #region AddX
         public void AddSingleton<TContract>(Func<TContract> F) where TContract : class
@@ -173,9 +176,9 @@ namespace Perfusion
             {
                 if (!t.IsAbstract && !t.IsInterface)
                 {
-                    if (!tryAddGuessing(t))
+                    if (!OnTypeNotFound(t))
                     {
-                        throw new PerfusionException("Type not able to be guessed: " + t);
+                        throw new PerfusionException("Type not found: " + t);
                     }
                     else
                     {
@@ -192,6 +195,7 @@ namespace Perfusion
 
         public Container()
         {
+            OnTypeNotFound = tryAddGuessing;
             AddInstance(this);
         }
 

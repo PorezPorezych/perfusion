@@ -6,6 +6,7 @@ using System.Reflection;
 namespace Perfusion
 {
     public delegate bool TypeNotFoundHandler(Type t);
+    public delegate Type ManyImplementersHandler(ObjectInfo[] i);
     public class Container
     {
         public const BindingFlags ALL_INSTANCE = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
@@ -14,6 +15,7 @@ namespace Perfusion
         public IReadOnlyDictionary<Type, ObjectInfo> RegisteredObjects => objects;
 
         public TypeNotFoundHandler OnTypeNotFound { get; set; }
+        public ManyImplementersHandler OnManyImplementers { get; set; }
 
         #region AddX
         public void AddSingleton<TContract>(Func<TContract> F) where TContract : class
@@ -172,7 +174,13 @@ namespace Perfusion
             KeyValuePair<Type, ObjectInfo>[] possibleImplementors = objects.Where(x => x.Key.GetInterfaces().Concat(GetHierarchy(x.Key)).Contains(t)).ToArray();
 
             if (possibleImplementors.Length > 1)
+            {
+                Type te = OnManyImplementers(possibleImplementors.Select(x => x.Value).ToArray());
+                if (te == null)
                     throw new PerfusionException("Many possible implementors: " + string.Join(", ", possibleImplementors));
+                else
+                    return GetInstance(te);
+            }
             if (possibleImplementors.Length == 0)
             {
                 if (!t.IsAbstract && !t.IsInterface)
@@ -197,6 +205,7 @@ namespace Perfusion
         public Container()
         {
             OnTypeNotFound = tryAddGuessing;
+            OnManyImplementers = (t) => null;
             AddInstance(this);
         }
 

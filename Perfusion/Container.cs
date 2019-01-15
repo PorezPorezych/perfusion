@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -22,7 +22,7 @@ namespace Perfusion
         }
         public void AddSingleton(Type t, Func<object> F)
         {
-            objects.Add(t, new SingletonInfo(F));
+            AddInfo(t, new SingletonInfo(F));
         }
         public void AddTransient<TContract>(Func<TContract> F) where TContract : class
         {
@@ -30,7 +30,7 @@ namespace Perfusion
         }
         public void AddTransient(Type t, Func<object> F)
         {
-            objects.Add(t, new TransientInfo(F));
+            AddInfo(t, new TransientInfo(F));
         }
         public void AddPoolable<TContract>(Func<TContract> F, int poolsize) where TContract : class
         {
@@ -38,7 +38,7 @@ namespace Perfusion
         }
         public void AddPoolable(Type t, Func<object> F, int poolsize)
         {
-            objects.Add(t, new PoolableInfo(F, poolsize));
+            AddInfo(t, new PoolableInfo(F, poolsize));
         }
         public void Add(Type t)
         {
@@ -53,10 +53,11 @@ namespace Perfusion
 
         public void AddInfo<T>(ObjectInfo i)
         {
-            objects[typeof(T)] = i;
+            AddInfo(typeof(T), i);
         }
         public void AddInfo(Type t, ObjectInfo i)
         {
+            i.Type = t;
             objects[t] = i;
         }
         #endregion
@@ -137,7 +138,7 @@ namespace Perfusion
             {
                 ObjectInfo oi = guessInjectionType(t);
                 oi.Factory = () => Activator.CreateInstance(t);
-                objects[t] = oi;
+                AddInfo(t, oi);
                 return true;
             }
             else
@@ -148,7 +149,7 @@ namespace Perfusion
                     {
                         ObjectInfo oi = guessInjectionType(t);
                         oi.Factory = () => buildWithConstructor(t, ci);
-                        objects[t] = oi;
+                        AddInfo(t, oi);
                         return true;
                     }
                 }
@@ -171,7 +172,7 @@ namespace Perfusion
             KeyValuePair<Type, ObjectInfo>[] possibleImplementors = objects.Where(x => x.Key.GetInterfaces().Concat(GetHierarchy(x.Key)).Contains(t)).ToArray();
 
             if (possibleImplementors.Length > 1)
-                throw new PerfusionException("Many possible implementors: " + string.Join(", ", possibleImplementors));
+                    throw new PerfusionException("Many possible implementors: " + string.Join(", ", possibleImplementors));
             if (possibleImplementors.Length == 0)
             {
                 if (!t.IsAbstract && !t.IsInterface)
@@ -213,6 +214,7 @@ namespace Perfusion
     public abstract class ObjectInfo
     {
         public Func<object> Factory;
+        public Type Type;
         public abstract object GetInstance();
     }
     public class SingletonInfo : ObjectInfo

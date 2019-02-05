@@ -74,7 +74,7 @@ namespace Perfusion
                     if (f.FieldType == t)
                         throw new PerfusionException("Dependency loop in " + o.GetType());
                     bool required = (bool)f.CustomAttributes.First(x => x.AttributeType == typeof(InjectAttribute)).ConstructorArguments[0].Value;
-                    f.SetValue(o, GetInstance(f.FieldType, required));
+                    f.SetValue(o, GetInstance(f.FieldType, required, t));
                 }
             }
             foreach (PropertyInfo p in t.GetProperties(ALL_INSTANCE))
@@ -84,7 +84,7 @@ namespace Perfusion
                     if (p.PropertyType == t)
                         throw new PerfusionException("Dependency loop in " + o.GetType());
                     bool required = (bool)p.CustomAttributes.First(x => x.AttributeType == typeof(InjectAttribute)).ConstructorArguments[0].Value;
-                    p.SetValue(o, GetInstance(p.PropertyType, required));
+                    p.SetValue(o, GetInstance(p.PropertyType, required, t));
                 }
             }
             foreach (MethodInfo m in t.GetMethods(ALL_INSTANCE))
@@ -98,7 +98,7 @@ namespace Perfusion
                         if (v.ParameterType == t)
                             throw new PerfusionException("Dependency loop in " + o.GetType());
                         bool required = (bool)m.CustomAttributes.First(x => x.AttributeType == typeof(InjectAttribute)).ConstructorArguments[0].Value;
-                        param[i] = GetInstance(v.ParameterType, required);
+                        param[i] = GetInstance(v.ParameterType, required, t);
                         i++;
                     }
                     m.Invoke(o, param);
@@ -116,14 +116,14 @@ namespace Perfusion
                 ParameterInfo p = c.GetParameters()[i];
                 if (p.ParameterType == t)
                     throw new PerfusionException("Dependency loop in " + t.GetType());
-                paramlist[i] = GetInstance(p.ParameterType);
+                paramlist[i] = GetInstance(p.ParameterType, true, t);
             }
             object created = Activator.CreateInstance(t, paramlist);
             ResolveObject(created);
             return created;
         }
 
-        public T GetInstance<T>() where T : class => (T)GetInstance(typeof(T));
+        public T GetInstance<T>(Type requester = null) where T : class => (T)GetInstance(typeof(T), requester: requester);
         private ObjectInfo guessInjectionType(Type t)
         {
             if (t.CustomAttributes.Any(x => x.AttributeType == typeof(SingletonAttribute)))
@@ -158,7 +158,7 @@ namespace Perfusion
                 return false;
             }
         }
-        public object GetInstance(Type t, bool required = true)
+        public object GetInstance(Type t, bool required = true, Type requester = null)
         {
             if (!required)
             {
@@ -191,7 +191,7 @@ namespace Perfusion
                     }
                     else
                     {
-                        return GetInstance(t); //use recursion
+                        return GetInstance(t, requester: requester); //use recursion
                     }
                 }
                 else
@@ -199,7 +199,7 @@ namespace Perfusion
                     throw new PerfusionException("Object implementing " + t.FullName + " not found");
                 }
             }
-            return ResolveObject(possibleImplementors[0].Value.GetInstance());
+            return ResolveObject(possibleImplementors[0].Value.GetInstance(requester));
         }
 
         public Container()
@@ -224,13 +224,13 @@ namespace Perfusion
     {
         public Func<object> Factory;
         public Type Type;
-        public abstract object GetInstance();
+        public abstract object GetInstance(Type requester = null);
     }
     public class SingletonInfo : ObjectInfo
     {
         public bool IsInstantiated = false;
         public object Value;
-        public override object GetInstance()
+        public override object GetInstance(Type requester = null)
         {
             if (!IsInstantiated)
             {
@@ -248,7 +248,7 @@ namespace Perfusion
     }
     public class TransientInfo : ObjectInfo
     {
-        public override object GetInstance() => Factory();
+        public override object GetInstance(Type requester = null) => Factory();
         public TransientInfo(Func<Object> factory)
         {
             Factory = factory;
@@ -257,7 +257,7 @@ namespace Perfusion
     }
     public class PoolableInfo : ObjectInfo
     {
-        public override object GetInstance()
+        public override object GetInstance(Type requester = null)
         {
             if (pool.Count < PoolSize)
             {

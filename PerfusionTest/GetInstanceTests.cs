@@ -1,3 +1,4 @@
+using System;
 using Perfusion;
 using Xunit;
 
@@ -101,5 +102,26 @@ namespace PerfusionTest
             c.AddInfo<GuessableType>(oi);
             Assert.Contains(oi, c.RegisteredObjects.Values);
         }
+        public class PropInfo : ObjectInfo
+        {
+            public Type SavedValue;
+            public override object GetInstance(Type requester = null)
+            {
+                SavedValue = requester;
+                return new GuessableType();
+            }
+        }
+        public class TrashClass { }
+        [Fact]
+        public void UserTypePropagationTest()
+        {
+            Container c = new Container();
+            PropInfo oi = new PropInfo();
+            Type t = typeof(TrashClass);
+            c.AddInfo<GuessableType>(oi);
+            c.GetInstance<GuessableType>(t);
+            Assert.Equal(oi.SavedValue, t);
+        }
     }
+
 }

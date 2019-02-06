@@ -124,23 +124,21 @@ namespace Perfusion
         }
 
         public T GetInstance<T>(Type requester = null) where T : class => (T)GetInstance(typeof(T), requester: requester);
-        private ObjectInfo guessInjectionType(Type t)
+        private ObjectInfo guessInjectionType(Type t, Func<object> factory)
         {
             if (t.CustomAttributes.Any(x => x.AttributeType == typeof(SingletonAttribute)))
-                return new SingletonInfo();
+                return new SingletonInfo(factory);
             else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(TransientAttribute)))
-                return new TransientInfo();
+                return new TransientInfo(factory);
             else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(PoolableAttribute)))
-                return new PoolableInfo((int)(t.CustomAttributes.First(x => x.AttributeType == typeof(PoolableAttribute)).ConstructorArguments[0].Value));
-            else return new SingletonInfo();
+                return new PoolableInfo(factory, (int)(t.CustomAttributes.First(x => x.AttributeType == typeof(PoolableAttribute)).ConstructorArguments[0].Value));
+            else return new SingletonInfo(factory);
         }
         private bool tryAddGuessing(Type t)
         {
             if (t.GetTypeInfo().DeclaredConstructors.Any(x => x.GetParameters().Length == 0))
             {
-                ObjectInfo oi = guessInjectionType(t);
-                oi.Factory = () => Activator.CreateInstance(t);
-                AddInfo(t, oi);
+                AddInfo(t, guessInjectionType(t, () => Activator.CreateInstance(t)));
                 return true;
             }
             else
@@ -149,9 +147,7 @@ namespace Perfusion
                 {
                     if (ci.CustomAttributes.Any(x => x.AttributeType == typeof(InjectAttribute)))
                     {
-                        ObjectInfo oi = guessInjectionType(t);
-                        oi.Factory = () => buildWithConstructor(t, ci);
-                        AddInfo(t, oi);
+                        AddInfo(t, guessInjectionType(t, () => buildWithConstructor(t, ci)));
                         return true;
                     }
                 }
@@ -222,12 +218,12 @@ namespace Perfusion
 
     public abstract class ObjectInfo
     {
-        public Func<object> Factory;
         public Type Type;
         public abstract object GetInstance(Type requester = null);
     }
     public class SingletonInfo : ObjectInfo
     {
+        public Func<object> Factory;
         public bool IsInstantiated = false;
         public object Value;
         public override object GetInstance(Type requester = null)
@@ -248,6 +244,7 @@ namespace Perfusion
     }
     public class TransientInfo : ObjectInfo
     {
+        public Func<object> Factory;
         public override object GetInstance(Type requester = null) => Factory();
         public TransientInfo(Func<Object> factory)
         {
@@ -257,6 +254,7 @@ namespace Perfusion
     }
     public class PoolableInfo : ObjectInfo
     {
+        public Func<object> Factory;
         public override object GetInstance(Type requester = null)
         {
             if (pool.Count < PoolSize)

@@ -105,10 +105,10 @@ namespace PerfusionTest
         public class PropInfo : ObjectInfo
         {
             public Type SavedValue;
-            public override object GetInstance(Type requester = null)
+            public override object GetInstance(Container c, Type requester = null)
             {
                 SavedValue = requester;
-                return new GuessableType();
+                return c.ResolveObject(new GuessableType());
             }
         }
         public class TrashClass { }

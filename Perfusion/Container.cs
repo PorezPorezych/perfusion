@@ -195,7 +195,7 @@ namespace Perfusion
                     throw new PerfusionException("Object implementing " + t.FullName + " not found");
                 }
             }
-            return ResolveObject(possibleImplementors[0].Value.GetInstance(requester));
+            return possibleImplementors[0].Value.GetInstance(this, requester);
         }
 
         public Container()
@@ -219,19 +219,19 @@ namespace Perfusion
     public abstract class ObjectInfo
     {
         public Type Type;
-        public abstract object GetInstance(Type requester = null);
+        public abstract object GetInstance(Container c, Type requester = null);
     }
     public class SingletonInfo : ObjectInfo
     {
         public Func<object> Factory;
         public bool IsInstantiated = false;
         public object Value;
-        public override object GetInstance(Type requester = null)
+        public override object GetInstance(Container c, Type requester = null)
         {
             if (!IsInstantiated)
             {
                 IsInstantiated = true;
-                return Value = Factory();
+                return Value = c.ResolveObject(Factory());
             }
             else
                 return Value;
@@ -245,7 +245,7 @@ namespace Perfusion
     public class TransientInfo : ObjectInfo
     {
         public Func<object> Factory;
-        public override object GetInstance(Type requester = null) => Factory();
+        public override object GetInstance(Container c, Type requester = null) => c.ResolveObject(Factory());
         public TransientInfo(Func<Object> factory)
         {
             Factory = factory;
@@ -255,11 +255,11 @@ namespace Perfusion
     public class PoolableInfo : ObjectInfo
     {
         public Func<object> Factory;
-        public override object GetInstance(Type requester = null)
+        public override object GetInstance(Container c, Type requester = null)
         {
             if (pool.Count < PoolSize)
             {
-                object o = Factory();
+                object o = c.ResolveObject(Factory());
                 pool[o] = 1;
                 return o;
             }

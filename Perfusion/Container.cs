@@ -167,7 +167,7 @@ namespace Perfusion
         {
             OnTypeNotFound = tryAddGuessing;
             OnManyImplementers = (t) => null;
-            AddInfo(typeof(IContainer), new SingletonInfo(() => this));
+            AddInfo(typeof(Container), new SingletonInfo(() => this));
         }
 
         #region service 

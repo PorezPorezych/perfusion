@@ -105,7 +105,7 @@ namespace PerfusionTest
         public class PropInfo : ObjectInfo
         {
             public Type SavedValue;
-            public override object GetInstance(Container c, Type requester = null)
+            public override object GetInstance(IContainer c, Type requester = null)
             {
                 SavedValue = requester;
                 return c.ResolveObject(new GuessableType());
@@ -119,7 +119,7 @@ namespace PerfusionTest
             PropInfo oi = new PropInfo();
             Type t = typeof(TrashClass);
             c.AddInfo<GuessableType>(oi);
-            c.GetInstance<GuessableType>(t);
+            c.GetInstance<GuessableType>(requester: t);
             Assert.Equal(oi.SavedValue, t);
         }
     }

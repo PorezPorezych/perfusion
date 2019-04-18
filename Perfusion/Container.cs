@@ -7,7 +7,7 @@ namespace Perfusion
 {
     public delegate bool TypeNotFoundHandler(Type t);
     public delegate Type ManyImplementersHandler(ObjectInfo[] i);
-    public class Container
+    public class Container : IContainer
     {
         public const BindingFlags ALL_INSTANCE = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
@@ -18,44 +18,12 @@ namespace Perfusion
         public ManyImplementersHandler OnManyImplementers { get; set; }
 
         #region AddX
-        public void AddSingleton<TContract>(Func<TContract> F) where TContract : class
-        {
-            AddSingleton(typeof(TContract), F);
-        }
-        public void AddSingleton(Type t, Func<object> F)
-        {
-            AddInfo(t, new SingletonInfo(F));
-        }
-        public void AddTransient<TContract>(Func<TContract> F) where TContract : class
-        {
-            AddTransient(typeof(TContract), F);
-        }
-        public void AddTransient(Type t, Func<object> F)
-        {
-            AddInfo(t, new TransientInfo(F));
-        }
-        public void AddPoolable<TContract>(Func<TContract> F, int poolsize) where TContract : class
-        {
-            AddPoolable(typeof(TContract), F, poolsize);
-        }
-        public void AddPoolable(Type t, Func<object> F, int poolsize)
-        {
-            AddInfo(t, new PoolableInfo(F, poolsize));
-        }
         public void Add(Type t)
         {
             if (!tryAddGuessing(t))
             {
                 throw new PerfusionException("Type not able to be guessed: " + t);
             }
-        }
-        public void Add<T>() => Add(typeof(T));
-
-        public void AddInstance<TContract>(TContract f) where TContract : class => AddSingleton(() => f);
-
-        public void AddInfo<T>(ObjectInfo i)
-        {
-            AddInfo(typeof(T), i);
         }
         public void AddInfo(Type t, ObjectInfo i)
         {
@@ -107,7 +75,6 @@ namespace Perfusion
             return o;
         }
 
-
         private object buildWithConstructor(Type t, ConstructorInfo c)
         {
             object[] paramlist = new object[c.GetParameters().Length];
@@ -122,8 +89,6 @@ namespace Perfusion
             ResolveObject(created);
             return created;
         }
-
-        public T GetInstance<T>(Type requester = null) where T : class => (T)GetInstance(typeof(T), requester: requester);
         private ObjectInfo guessInjectionType(Type t, Func<object> factory)
         {
             if (t.CustomAttributes.Any(x => x.AttributeType == typeof(SingletonAttribute)))
@@ -202,7 +167,7 @@ namespace Perfusion
         {
             OnTypeNotFound = tryAddGuessing;
             OnManyImplementers = (t) => null;
-            AddInstance(this);
+            AddInfo(typeof(IContainer), new SingletonInfo(() => this));
         }
 
         #region service 
@@ -215,18 +180,12 @@ namespace Perfusion
 
         #endregion
     }
-
-    public abstract class ObjectInfo
-    {
-        public Type Type;
-        public abstract object GetInstance(Container c, Type requester = null);
-    }
     public class SingletonInfo : ObjectInfo
     {
         public Func<object> Factory;
         public bool IsInstantiated = false;
         public object Value;
-        public override object GetInstance(Container c, Type requester = null)
+        public override object GetInstance(IContainer c, Type requester = null)
         {
             if (!IsInstantiated)
             {
@@ -245,7 +204,7 @@ namespace Perfusion
     public class TransientInfo : ObjectInfo
     {
         public Func<object> Factory;
-        public override object GetInstance(Container c, Type requester = null) => c.ResolveObject(Factory());
+        public override object GetInstance(IContainer c, Type requester = null) => c.ResolveObject(Factory());
         public TransientInfo(Func<Object> factory)
         {
             Factory = factory;
@@ -255,7 +214,7 @@ namespace Perfusion
     public class PoolableInfo : ObjectInfo
     {
         public Func<object> Factory;
-        public override object GetInstance(Container c, Type requester = null)
+        public override object GetInstance(IContainer c, Type requester = null)
         {
             if (pool.Count < PoolSize)
             {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Perfusion
 {
-    public interface IContainer
+    public interface IContainer : IServiceProvider
     {
         T ResolveObject<T>(T obj);
         object GetInstance(Type t, bool required = true, Type requester = null);

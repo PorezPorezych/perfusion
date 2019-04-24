@@ -178,6 +178,8 @@ namespace Perfusion
                 yield return T;
         }
 
+        public object GetService(Type serviceType) => GetInstance(serviceType);
+
         #endregion
     }
     public class SingletonInfo : ObjectInfo

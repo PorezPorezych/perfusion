@@ -12,6 +12,7 @@ namespace Perfusion
         public const BindingFlags ALL_INSTANCE = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
         Dictionary<Type, ObjectInfo> objects = new Dictionary<Type, ObjectInfo>();
+        private readonly object objectsLock = new object();
         public IReadOnlyDictionary<Type, ObjectInfo> RegisteredObjects => objects;
 
         public TypeNotFoundHandler OnTypeNotFound { get; set; }
@@ -28,7 +29,8 @@ namespace Perfusion
         public void AddInfo(Type t, ObjectInfo i)
         {
             i.Type = t;
-            objects[t] = i;
+            lock (objectsLock)
+                objects[t] = i;
         }
         #endregion
 
@@ -132,7 +134,9 @@ namespace Perfusion
                     return null;
                 }
             }
-            KeyValuePair<Type, ObjectInfo>[] possibleImplementors = objects.Where(x => x.Key.GetInterfaces().Concat(GetHierarchy(x.Key)).Contains(t)).ToArray();
+            KeyValuePair<Type, ObjectInfo>[] possibleImplementors;
+            lock (objectsLock)
+                possibleImplementors = objects.Where(x => x.Key.GetInterfaces().Concat(GetHierarchy(x.Key)).Contains(t)).ToArray();
 
             if (possibleImplementors.Length > 1)
             {
@@ -187,15 +191,17 @@ namespace Perfusion
         public Func<object> Factory;
         public bool IsInstantiated = false;
         public object Value;
+        private readonly object valueLock = new object();
         public override object GetInstance(IContainer c, Type requester = null)
         {
-            if (!IsInstantiated)
-            {
-                IsInstantiated = true;
-                return Value = c.ResolveObject(Factory());
-            }
-            else
-                return Value;
+            lock (valueLock)
+                if (!IsInstantiated)
+                {
+                    IsInstantiated = true;
+                    return Value = c.ResolveObject(Factory());
+                }
+                else
+                    return Value;
         }
         public SingletonInfo(Func<Object> factory)
         {
@@ -216,20 +222,22 @@ namespace Perfusion
     public class PoolableInfo : ObjectInfo
     {
         public Func<object> Factory;
+        private readonly object poolLock = new object();
         public override object GetInstance(IContainer c, Type requester = null)
         {
-            if (pool.Count < PoolSize)
-            {
-                object o = c.ResolveObject(Factory());
-                pool[o] = 1;
-                return o;
-            }
-            else
-            {
-                object least = pool.OrderBy(x => x.Value).First().Key;
-                pool[least] = pool[least] + 1;
-                return least;
-            }
+            lock (poolLock)
+                if (pool.Count < PoolSize)
+                {
+                    object o = c.ResolveObject(Factory());
+                    pool[o] = 1;
+                    return o;
+                }
+                else
+                {
+                    object least = pool.OrderBy(x => x.Value).First().Key;
+                    pool[least] = pool[least] + 1;
+                    return least;
+                }
         }
         private Dictionary<object, int> pool;
         public int PoolSize { get; }

@@ -21,6 +21,7 @@ namespace PerfusionTest
             Assert.NotNull(gt);
             Assert.IsType<GuessableTypeWithConstructor>(gt);
         }
+        [Fact]
         public void GuessInjectionTypeTest()
         {
             Container c = new Container();

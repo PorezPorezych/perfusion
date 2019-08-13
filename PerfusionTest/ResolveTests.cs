@@ -68,7 +68,7 @@ namespace PerfusionTest
             c.AddSingleton(() => new TypeWithProperty());
             c.AddSingleton(() => new GuessableType());
             TypeWithProperty t = c.GetInstance<TypeWithProperty>();
-            Assert.NotNull(t.gotCalled);
+            Assert.True(t.gotCalled);
         }
     }
 }

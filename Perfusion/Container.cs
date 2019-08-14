@@ -167,6 +167,33 @@ namespace Perfusion
             return possibleImplementors[0].Value.GetInstance(this, requester);
         }
 
+        public IEnumerable<object> GetInstances(Type t, Type requester = null)
+        {
+            KeyValuePair<Type, ObjectInfo>[] possibleImplementors;
+            lock (objectsLock)
+                possibleImplementors = objects.Where(x => x.Key.GetInterfaces().Concat(GetHierarchy(x.Key)).Contains(t)).ToArray();
+
+            if (possibleImplementors.Length == 0)
+            {
+                if (!t.IsAbstract && !t.IsInterface)
+                {
+                    if (!OnTypeNotFound(t))
+                    {
+                        throw new PerfusionException("Type not found: " + t);
+                    }
+                    else
+                    {
+                        return GetInstances(t, requester: requester); //use recursion
+                    }
+                }
+                else
+                {
+                    throw new PerfusionException("Object implementing " + t.FullName + " not found");
+                }
+            }
+            return possibleImplementors.Select(x => x.Value.GetInstance(this, requester));
+        }
+
         public Container()
         {
             OnTypeNotFound = tryAddGuessing;

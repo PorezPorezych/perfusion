@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Perfusion;
 using Xunit;
 
@@ -122,6 +123,19 @@ namespace PerfusionTest
             c.GetInstance<GuessableType>(requester: t);
             Assert.Equal(oi.SavedValue, t);
         }
+        [Fact]
+        public void GetInstancesTest()
+        {
+            Container c = new Container();
+            GuessableType gt = new GuessableType();
+            TransientGuessableType tgt = new TransientGuessableType();
+            c.AddInstance(gt);
+            c.AddInstance<TransientGuessableType>(tgt);
+            object[] arr = c.GetInstances<IGuessableType>().ToArray();
+            Assert.NotEmpty(arr);
+            Assert.Equal(2, arr.Length);
+            Assert.Contains(gt, arr);
+            Assert.Contains(tgt, arr);
+        }
     }
-
 }

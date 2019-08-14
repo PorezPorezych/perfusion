@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Perfusion
 {
@@ -7,6 +8,7 @@ namespace Perfusion
     {
         T ResolveObject<T>(T obj);
         object GetInstance(Type t, bool required = true, Type requester = null);
+        IEnumerable<object> GetInstances(Type t, Type requester = null);
         IReadOnlyDictionary<Type, ObjectInfo> RegisteredObjects { get; }
 
         void Add(Type t);
@@ -57,6 +59,10 @@ namespace Perfusion
         public static T GetInstance<T>(this IContainer c, bool required = true, Type requester = null) where T : class
         {
             return (T)c.GetInstance(typeof(T), required, requester);
+        }
+        public static IEnumerable<T> GetInstances<T>(this IContainer c, Type requester = null) where T : class
+        {
+            return c.GetInstances(typeof(T), requester).Cast<T>();
         }
     }
     public abstract class ObjectInfo

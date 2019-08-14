@@ -121,7 +121,7 @@ namespace PerfusionTest
             Type t = typeof(TrashClass);
             c.AddInfo<GuessableType>(oi);
             c.GetInstance<GuessableType>(requester: t);
-            Assert.Equal(oi.SavedValue, t);
+            Assert.Equal(t, oi.SavedValue);
         }
         [Fact]
         public void GetInstancesTest()

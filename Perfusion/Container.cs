@@ -194,6 +194,20 @@ namespace Perfusion
             return possibleImplementors.Select(x => x.Value.GetInstance(this, requester));
         }
 
+        public Container Subcontainer()
+        {
+            Container c = new Container();
+
+            foreach (ObjectInfo oi in RegisteredObjects.Values)
+            {
+                if (oi.Type == typeof(Container))
+                    continue; // Autocreated
+                c.AddInfo(oi.Type, oi.Clone());
+            }
+
+            return c;
+        }
+
         public Container()
         {
             OnTypeNotFound = tryAddGuessing;
@@ -230,9 +244,20 @@ namespace Perfusion
                 else
                     return Value;
         }
+
+        public override ObjectInfo Clone() => new SingletonInfo(Factory, Value, IsInstantiated);
+
         public SingletonInfo(Func<Object> factory)
         {
             Factory = factory;
+        }
+        protected SingletonInfo(Func<Object> factory, object value, bool inst)
+        {
+            Factory = factory;
+            IsInstantiated = inst;
+            if (inst)
+                Value = value;
+
         }
         public SingletonInfo() { }
     }
@@ -240,6 +265,9 @@ namespace Perfusion
     {
         public Func<object> Factory;
         public override object GetInstance(IContainer c, Type requester = null) => c.ResolveObject(Factory());
+
+        public override ObjectInfo Clone() => new TransientInfo(Factory);
+
         public TransientInfo(Func<Object> factory)
         {
             Factory = factory;
@@ -266,6 +294,9 @@ namespace Perfusion
                     return least;
                 }
         }
+
+        public override ObjectInfo Clone() => new PoolableInfo(Factory, PoolSize, pool);
+
         private Dictionary<object, int> pool;
         public int PoolSize { get; }
         public PoolableInfo(Func<Object> factory, int poolsize)
@@ -278,6 +309,12 @@ namespace Perfusion
         {
             PoolSize = poolsize;
             pool = new Dictionary<object, int>(poolsize);
+        }
+        protected PoolableInfo(Func<Object> factory, int poolsize, Dictionary<object, int> pool)
+        {
+            Factory = factory;
+            PoolSize = poolsize;
+            pool = pool.ToDictionary(x => x.Key, x => x.Value);
         }
     }
 }

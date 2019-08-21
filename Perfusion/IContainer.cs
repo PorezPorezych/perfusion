@@ -69,5 +69,6 @@ namespace Perfusion
     {
         public Type Type;
         public abstract object GetInstance(IContainer c, Type requester = null);
+        public abstract ObjectInfo Clone();
     }
 }

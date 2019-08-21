@@ -106,6 +106,9 @@ namespace PerfusionTest
         public class PropInfo : ObjectInfo
         {
             public Type SavedValue;
+
+            public override ObjectInfo Clone() => throw new NotImplementedException("What");
+
             public override object GetInstance(IContainer c, Type requester = null)
             {
                 SavedValue = requester;

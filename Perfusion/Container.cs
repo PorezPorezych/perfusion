@@ -21,10 +21,7 @@ namespace Perfusion
         #region AddX
         public void Add(Type t)
         {
-            if (!tryAddGuessing(t))
-            {
-                throw new PerfusionException("Type not able to be guessed: " + t);
-            }
+            AddInfo(t, ConstructUtils.MakeInfoFor(t, this));
         }
         public void AddInfo(Type t, ObjectInfo i)
         {
@@ -77,50 +74,6 @@ namespace Perfusion
             return o;
         }
 
-        private object buildWithConstructor(Type t, ConstructorInfo c)
-        {
-            object[] paramlist = new object[c.GetParameters().Length];
-            for (int i = 0; i < paramlist.Length; i++)
-            {
-                ParameterInfo p = c.GetParameters()[i];
-                if (p.ParameterType == t)
-                    throw new PerfusionException("Dependency loop in " + t.GetType());
-                paramlist[i] = GetInstance(p.ParameterType, true, t);
-            }
-            object created = Activator.CreateInstance(t, paramlist);
-            ResolveObject(created);
-            return created;
-        }
-        private ObjectInfo guessInjectionType(Type t, Func<object> factory)
-        {
-            if (t.CustomAttributes.Any(x => x.AttributeType == typeof(SingletonAttribute)))
-                return new SingletonInfo(factory);
-            else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(TransientAttribute)))
-                return new TransientInfo(factory);
-            else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(PoolableAttribute)))
-                return new PoolableInfo(factory, (int)(t.CustomAttributes.First(x => x.AttributeType == typeof(PoolableAttribute)).ConstructorArguments[0].Value));
-            else return new SingletonInfo(factory);
-        }
-        private bool tryAddGuessing(Type t)
-        {
-            if (t.GetTypeInfo().DeclaredConstructors.Any(x => x.GetParameters().Length == 0))
-            {
-                AddInfo(t, guessInjectionType(t, () => Activator.CreateInstance(t)));
-                return true;
-            }
-            else
-            {
-                foreach (ConstructorInfo ci in t.GetTypeInfo().DeclaredConstructors)
-                {
-                    if (ci.CustomAttributes.Any(x => x.AttributeType == typeof(InjectAttribute)))
-                    {
-                        AddInfo(t, guessInjectionType(t, () => buildWithConstructor(t, ci)));
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
         public object GetInstance(Type t, bool required = true, Type requester = null)
         {
             if (!required)
@@ -210,7 +163,18 @@ namespace Perfusion
 
         public Container()
         {
-            OnTypeNotFound = tryAddGuessing;
+            OnTypeNotFound = (t) =>
+            {
+                try
+                {
+                    AddInfo(t, ConstructUtils.MakeInfoFor(t, this));
+                    return true;
+                }
+                catch (PerfusionException)
+                {
+                    return false;
+                }
+            };
             OnManyImplementers = (t) => null;
             AddInfo(typeof(Container), new SingletonInfo(() => this));
         }

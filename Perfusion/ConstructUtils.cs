@@ -14,7 +14,7 @@ namespace Perfusion
             {
                 foreach (ConstructorInfo ci in t.GetTypeInfo().DeclaredConstructors)
                 {
-                    if (ci.CustomAttributes.Any(x => x.AttributeType == typeof(InjectAttribute)))
+                    if (ci.CustomAttributes.All(x => x.AttributeType != typeof(NoInjectAttribute)))
                     {
                         return () => ConstructInstanceUsing(ci, container);
                     }

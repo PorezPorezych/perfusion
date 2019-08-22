@@ -1,3 +1,4 @@
+using System;
 using Perfusion;
 using Xunit;
 
@@ -20,6 +21,12 @@ namespace PerfusionTest
             object gt = c.GetInstance(typeof(GuessableTypeWithConstructor));
             Assert.NotNull(gt);
             Assert.IsType<GuessableTypeWithConstructor>(gt);
+        }
+        [Fact]
+        public void GuessTypeWithNoInjectConstructor()
+        {
+            Container c = new Container();
+            Assert.Throws<PerfusionException>(() => c.GetInstance(typeof(GuessableTypeWithNoInjectConstructor)));
         }
         [Fact]
         public void GuessInjectionTypeTest()
@@ -46,10 +53,17 @@ namespace PerfusionTest
         abstract class AGuessableType { }
         class GuessableTypeWithConstructor
         {
-            [Inject]
             public GuessableTypeWithConstructor(GuessableType gt)
             {
                 Assert.NotNull(gt);
+            }
+        }
+        class GuessableTypeWithNoInjectConstructor
+        {
+            [NoInject]
+            public GuessableTypeWithNoInjectConstructor(GuessableType gt)
+            {
+                throw new NotImplementedException("What");
             }
         }
         abstract class AbstractType

@@ -18,14 +18,6 @@ namespace PerfusionTest
         }
         interface IGuessableType { }
         abstract class AGuessableType { }
-        class GuessableTypeWithConstructor
-        {
-            [Inject]
-            public GuessableTypeWithConstructor(GuessableType gt)
-            {
-                Assert.NotNull(gt);
-            }
-        }
         [Fact]
         public void SingletonTest()
         {

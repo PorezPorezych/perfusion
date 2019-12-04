@@ -6,6 +6,11 @@ namespace Perfusion
         public SingletonAttribute() { }
     }
     [System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ScopedAttribute : System.Attribute
+    {
+        public ScopedAttribute() { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public sealed class TransientAttribute : System.Attribute
     {
         public TransientAttribute() { }

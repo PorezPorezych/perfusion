@@ -24,6 +24,14 @@ namespace Perfusion
         {
             c.AddInfo(t, new SingletonInfo(F));
         }
+        public static void AddScoped<TContract>(this IContainer c, Func<TContract> F) where TContract : class
+        {
+            c.AddInfo(typeof(TContract), new ScopedInfo(F));
+        }
+        public static void AddScoped(this IContainer c, Type t, Func<object> F)
+        {
+            c.AddInfo(t, new ScopedInfo(F));
+        }
         public static void AddTransient<TContract>(this IContainer c, Func<TContract> F) where TContract : class
         {
             c.AddInfo(typeof(TContract), new TransientInfo(F));

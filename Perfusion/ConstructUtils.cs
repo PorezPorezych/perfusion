@@ -43,6 +43,8 @@ namespace Perfusion
         {
             if (t.CustomAttributes.Any(x => x.AttributeType == typeof(SingletonAttribute)))
                 return new SingletonInfo(factory);
+            if (t.CustomAttributes.Any(x => x.AttributeType == typeof(ScopedAttribute)))
+                return new ScopedInfo(factory);
             else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(TransientAttribute)))
                 return new TransientInfo(factory);
             else if (t.CustomAttributes.Any(x => x.AttributeType == typeof(PoolableAttribute)))

@@ -209,21 +209,38 @@ namespace Perfusion
                     return Value;
         }
 
-        public override ObjectInfo Clone() => new SingletonInfo(Factory, Value, IsInstantiated);
+        public override ObjectInfo Clone() => this; //Pass self to share state
 
         public SingletonInfo(Func<Object> factory)
         {
             Factory = factory;
         }
-        protected SingletonInfo(Func<Object> factory, object value, bool inst)
+        public SingletonInfo() { }
+    }
+    public class ScopedInfo : ObjectInfo
+    {
+        public Func<object> Factory;
+        public bool IsInstantiated = false;
+        public object Value;
+        private readonly object valueLock = new object();
+        public override object GetInstance(IContainer c, Type requester = null)
+        {
+            lock (valueLock)
+                if (!IsInstantiated)
+                {
+                    IsInstantiated = true;
+                    return Value = c.ResolveObject(Factory());
+                }
+                else
+                    return Value;
+        }
+
+        public override ObjectInfo Clone() => new ScopedInfo(Factory);
+        public ScopedInfo(Func<Object> factory)
         {
             Factory = factory;
-            IsInstantiated = inst;
-            if (inst)
-                Value = value;
-
         }
-        public SingletonInfo() { }
+        public ScopedInfo() { }
     }
     public class TransientInfo : ObjectInfo
     {

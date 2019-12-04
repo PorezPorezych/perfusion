@@ -9,11 +9,6 @@ namespace PerfusionTest
         {
             public GuessableType() { }
         }
-        [Transient]
-        class TransientGuessableType : GuessableType
-        {
-            public TransientGuessableType() { }
-        }
         interface IGuessableType { }
         abstract class AGuessableType { }
         [Fact]

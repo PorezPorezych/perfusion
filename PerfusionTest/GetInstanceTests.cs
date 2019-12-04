@@ -45,6 +45,19 @@ namespace PerfusionTest
             Assert.NotSame(o, anothero);
         }
         [Fact]
+        public void ScopedTest()
+        {
+            Container c = new Container();
+            c.AddScoped(() => new GuessableType());
+            object o = c.GetInstance(typeof(GuessableType));
+            Assert.IsType<GuessableType>(o);
+            Assert.NotNull(o);
+            object anothero = c.GetInstance(typeof(GuessableType));
+            Assert.IsType<GuessableType>(anothero);
+            Assert.NotNull(anothero);
+            Assert.Same(o, anothero);
+        }
+        [Fact]
         public void PoolableTest()
         {
             Container c = new Container();

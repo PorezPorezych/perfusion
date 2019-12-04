@@ -36,6 +36,17 @@ namespace PerfusionTest
             Container subc = c.Subcontainer();
             GuessableType inner = subc.GetInstance<GuessableType>();
             GuessableType outer = c.GetInstance<GuessableType>();
+            Assert.Same(inner, outer);
+        }
+        [Fact]
+        public void ScopedDeepTest()
+        {
+            Container c = new Container();
+            ScopedInfo si = new ScopedInfo(() => new GuessableType());
+            c.AddInfo<GuessableType>(si);
+            Container subc = c.Subcontainer();
+            GuessableType inner = subc.GetInstance<GuessableType>();
+            GuessableType outer = c.GetInstance<GuessableType>();
             Assert.NotSame(inner, outer);
         }
         [Fact]

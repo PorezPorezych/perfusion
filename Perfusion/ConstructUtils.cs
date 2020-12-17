@@ -8,13 +8,13 @@ namespace Perfusion
     {
         public static Func<object> MakeFactoryFor(Type t, IContainer container)
         {
-            if (t.GetTypeInfo().DeclaredConstructors.Any(x => x.GetParameters().Length == 0))
+            if (t.GetTypeInfo().DeclaredConstructors.Any(x => !x.IsStatic && x.GetParameters().Length == 0))
                 return () => Activator.CreateInstance(t);
             else
             {
                 foreach (ConstructorInfo ci in t.GetTypeInfo().DeclaredConstructors)
                 {
-                    if (ci.CustomAttributes.All(x => x.AttributeType != typeof(NoInjectAttribute)))
+                    if (!ci.IsStatic && ci.CustomAttributes.All(x => x.AttributeType != typeof(NoInjectAttribute)))
                     {
                         return () => ConstructInstanceUsing(ci, container);
                     }

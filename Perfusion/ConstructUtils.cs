@@ -8,8 +8,9 @@ namespace Perfusion
     {
         public static Func<object> MakeFactoryFor(Type t, IContainer container)
         {
-            if (t.GetTypeInfo().DeclaredConstructors.Any(x => !x.IsStatic && x.GetParameters().Length == 0))
-                return () => Activator.CreateInstance(t);
+            var ctor = t.GetTypeInfo().DeclaredConstructors.FirstOrDefault(x => !x.IsStatic && x.GetParameters().Length == 0);
+            if (ctor != null)
+                return () => ctor.Invoke(new object[0]);
             else
             {
                 foreach (ConstructorInfo ci in t.GetTypeInfo().DeclaredConstructors)

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\Perfusion.Analyzer\Perfusion.Analyzer.csproj" PrivateAssets="all"/>
     <ProjectReference Include="..\Perfusion\Perfusion.csproj"/>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0"/>
     <PackageReference Include="xunit" Version="2.4.1"/>

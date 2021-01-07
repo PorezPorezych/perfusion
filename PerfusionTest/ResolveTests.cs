@@ -38,7 +38,7 @@ namespace PerfusionTest
         class TypeWithField
         {
             [Inject]
-            public GuessableType gt = null;
+            public GuessableType gt;
         }
         [Fact]
         public void ResolveFieldTest()
